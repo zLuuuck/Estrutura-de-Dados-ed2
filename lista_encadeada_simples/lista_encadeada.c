@@ -64,8 +64,9 @@ Nodo *inserirFim(Nodo *head, char *nome, int duracao)
     if (head == NULL)
         return novo;
     Nodo *temp = head;
-    while (temp->prox != NULL)
+    while (temp->prox != NULL){
         temp = temp->prox;
+    }
     temp->prox = novo;
     return head;
 }
@@ -76,8 +77,9 @@ Nodo *buscar(Nodo *head, char *nome)
     Nodo *temp = head;
     while (temp != NULL)
     {
-        if (strcmp(temp->nome, nome) == 0)
+        if (strcmp(temp->nome, nome) == 0){
             return temp;
+        }
         temp = temp->prox;
     }
     return NULL;
