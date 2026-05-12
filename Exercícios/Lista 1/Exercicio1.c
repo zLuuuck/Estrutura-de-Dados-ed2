@@ -95,5 +95,70 @@ void liberarLista(Nodo *head) {
 }
 
 int main() {
-    
+    Nodo *lista = NULL;
+    int opcao;
+    char nome[50];
+    int minutos, segundos;
+
+    do {
+        printf("\n=== PLAYER DE MUSICAS ===\n");
+        printf("1. Adicionar musica\n");
+        printf("2. Remover musica\n");
+        printf("3. Buscar musica\n");
+        printf("4. Listar musicas\n");
+        printf("0. Sair\n");
+        printf("Opcao: ");
+        scanf("%d", &opcao);
+        // Limpa o buffer do teclado após o scanf
+        while (getchar() != '\n');
+
+        switch (opcao) {
+            case 1:
+                printf("Nome da musica: ");
+                fgets(nome, 100, stdin);
+                nome[strcspn(nome, "\n")] = '\0'; // remove o \n do fgets
+                printf("Duracao (minutos): ");
+                scanf("%d", &minutos);
+                printf("Duracao (segundos): ");
+                scanf("%d", &segundos);
+                while (getchar() != '\n');
+                lista = inserirFim(lista, nome, minutos * 60 + segundos);
+                printf("Musica adicionada!\n");
+                break;
+
+            case 2:
+                printf("Nome da musica a remover: ");
+                fgets(nome, 100, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+                lista = remover(lista, nome);
+                break;
+
+            case 3:
+                printf("Nome da musica a buscar: ");
+                fgets(nome, 100, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+                Nodo *encontrado = buscar(lista, nome);
+                if (encontrado)
+                    printf("Encontrada: %s - %d:%02d\n", encontrado->nome,
+                           encontrado->duracao / 60, encontrado->duracao % 60);
+                else
+                    printf("Musica nao encontrada.\n");
+                break;
+
+            case 4:
+                imprimirLista(lista);
+                break;
+
+            case 0:
+                printf("Saindo...\n");
+                break;
+
+            default:
+                printf("Opcao invalida.\n");
+        }
+
+    } while (opcao != 0);
+
+    liberarLista(lista);
+    return 0;
 }
