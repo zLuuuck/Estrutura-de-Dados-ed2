@@ -7,12 +7,25 @@
 #include "../audio_func/audio.h"
 #include "../input_func/input.h"
 
-/* Pausa em milissegundos — portavel */
+/*
+ * DIFICULDADE: pausa portavel sem usleep().
+ *
+ * Precisavamos de uma espera de 200 ms entre cada iteracao do loop para
+ * atualizar a barra de status 5x por segundo sem queimar CPU.
+ *
+ * usleep() parece a escolha obvia no Linux, mas exige _BSD_SOURCE ou
+ * _XOPEN_SOURCE >= 500, e nao existe no Windows. Para compilar os dois
+ * sistemas sem ifdefs espalhados, criamos dormir_ms() baseada em
+ * nanosleep() (POSIX.1b, disponivelcom -D_POSIX_C_SOURCE=200112L) no
+ * Linux, e Sleep() da windows.h no Windows.
+ *
+ * APRENDIZADO: nanosleep() recebe struct timespec com segundos e
+ * nanossegundos; convertemos ms corretamente dividindo e usando o resto.
+ */
 #ifdef _WIN32
 #  include <windows.h>
 #  define SLEEP_MS(ms) Sleep(ms)
 #else
-/* nanosleep e POSIX.1b (199309L) — nao depende de extensoes BSD */
 static void dormir_ms(unsigned int ms) {
     struct timespec ts;
     ts.tv_sec  = (time_t)(ms / 1000u);
@@ -113,7 +126,12 @@ static void exibir_status(const EstadoPlayer *estado) {
         for (int i = 0; i < preenchido; i++) barra[i] = '=';
     }
 
-    /* \r sobrescreve a mesma linha; flush imediato */
+    /*
+     * \r (carriage return) move o cursor para o inicio da linha atual sem
+     * descer para a proxima — o printf seguinte sobrescreve o conteudo
+     * anterior. fflush() e obrigatorio aqui: sem ele, o buffer do stdout
+     * pode segurar os caracteres e a barra nao atualiza em tempo real.
+     */
     printf("\r  %s%s | [%s] %s/%s | %s: %-30.30s  "
            "  k=pause j=+5s l=-5s p=prox o=ant s=shuf q=sair  ",
            status, shuffle,
@@ -159,7 +177,15 @@ void player_loop(EstadoPlayer  *estado, Pilha *historico, Fila *fila, ListaDupla
         if (audio_is_at_end()) {
             NodoMusica *proxima = NULL;
 
-            /* Prioridade: fila > playlist > shuffle > biblioteca sequencial */
+            /*
+             * Ordem de prioridade para escolha da proxima musica:
+             *   1. Fila de reproducao (FIFO explicita do usuario)
+             *   2. Playlist atual (sequencial ou shuffle dentro dela)
+             *   3. Biblioteca geral (sequencial ou shuffle global)
+             * Essa hierarquia garante que musicas enfileiradas manualmente
+             * sempre tocam antes da progressao automatica da playlist ou da
+             * biblioteca — comportamento esperado num player real.
+             */
             if (!fila_vazia(fila)) {
                 proxima = fila_dequeue(fila);
             } else if (estado->playlist_atual) {

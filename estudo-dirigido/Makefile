@@ -63,6 +63,13 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Regra especial para audio.c: compilado SEM -Wall -Wextra.
+# Motivo: miniaudio.h e uma biblioteca de terceiros e dispara centenas de
+# avisos com as flags de aviso extras. Compilar o resto do projeto com -Wall
+# -Wextra e compilar so audio.c sem elas permite manter o rigor no nosso
+# codigo sem poluir a saida com alertas de codigo que nao controlamos.
+# Esse padrao (flag diferente por arquivo) foi sugerido pela IA ao ajudar
+# com a integracao da miniaudio.
 audio_func/audio.o: audio_func/audio.c audio_func/audio.h audio_func/miniaudio.h
 	$(CC) -std=c99 -I. -Iaudio_func -c $< -o $@
 

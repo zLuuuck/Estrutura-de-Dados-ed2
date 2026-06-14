@@ -15,7 +15,22 @@
  * Utilitarios internos
  * ========================================================================== */
 
-/* Descarta tudo que sobrou no buffer apos um scanf/fgets */
+/*
+ * DIFICULDADE: buffer de entrada sujo apos scanf.
+ *
+ * O problema: scanf("%d", &val) consome o numero mas deixa o '\n' (e
+ * qualquer outro caractere) no buffer do stdin. Na leitura seguinte, esse
+ * '\n' residual e consumido imediatamente, fazendo fgets() ou getchar()
+ * retornar uma string vazia sem esperar o usuario digitar nada.
+ *
+ * SOLUCAO: limpar_buffer() descarta todos os caracteres ate o proximo '\n'
+ * ou EOF. Chamada apos cada scanf e dentro de aguardar_enter(), garante
+ * que a proxima leitura comece sempre com o buffer vazio.
+ *
+ * Por que nao fflush(stdin)? Comportamento indefinido em POSIX — so
+ * funciona de forma previsivel no Windows (MSVC). Aprendemos isso ao
+ * pesquisar sobre o assunto e optamos pela solucao portavel com getchar().
+ */
 static void limpar_buffer(void)
 {
     int c;
@@ -270,6 +285,14 @@ static void menu_biblioteca(ListaDupla *lib, ListaPlaylists *playlists, Pilha *h
             ler_string("", conf, sizeof(conf));
             if (conf[0] == 's' || conf[0] == 'S')
             {
+                /*
+                 * Aqui e onde o callback e concretizado: passamos
+                 * playlist_em_alguma (funcao de playlist_func) e o ponteiro
+                 * para a lista de playlists. biblioteca_remover nao precisa
+                 * saber nada sobre playlist_func — so chama o ponteiro de
+                 * funcao recebido. Esse e o ponto de uniao que permite manter
+                 * os dois modulos desacoplados (ver comentario em biblioteca.c).
+                 */
                 int ok = biblioteca_remover(lib, alvo, historico, fila,
                                             playlist_em_alguma, playlists);
                 if (ok)

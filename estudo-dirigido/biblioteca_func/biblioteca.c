@@ -4,7 +4,15 @@
 #include <ctype.h>
 #include "biblioteca.h"
 
-/* Utilitario interno: busca substring case-insensitive */
+/*
+ * Busca substring case-insensitive.
+ *
+ * APRENDIZADO: tolower() e definido para unsigned char; passar um char
+ * diretamente e comportamento indefinido em plataformas onde char e signed
+ * e o valor for negativo (ex: caracteres acentuados em Latin-1). Por isso
+ * fazemos o cast para (unsigned char) antes de chamar tolower().
+ * Copiamos para buffers temporarios para nao modificar as strings originais.
+ */
 static int contem_ignorando_case(const char *texto, const char *padrao)
 {
     if (!texto || !padrao)
@@ -70,7 +78,30 @@ NodoMusica *biblioteca_cadastrar(ListaDupla *lib, const char *titulo, const char
     return novo;
 }
 
-/* Remocao */
+/*
+ * DIFICULDADE: dependencia circular entre modulos (ajuda de IA).
+ *
+ * biblioteca_remover precisa saber se uma musica esta em alguma playlist
+ * antes de libera-la. O problema: se biblioteca.c incluisse playlist.h
+ * diretamente, e playlist.h ja inclui tipos.h (que inclui NodoMusica),
+ * formaríamos um ciclo de includes dificil de resolver.
+ *
+ * SOLUCAO (ideia sugerida pela IA): passar a funcao de verificacao como
+ * callback (ponteiro de funcao). Quem chama biblioteca_remover — no caso
+ * o menu — fornece a funcao concreta (playlist_em_alguma) e o ponteiro
+ * para a lista de playlists. Assim biblioteca.c nao depende de playlist.h
+ * e os modulos ficam desacoplados.
+ *
+ * APRENDIZADO: o padrao callback em C (ponteiro de funcao + void* contexto)
+ * e a forma classica de quebrar dependencias circulares sem usar linguagens
+ * orientadas a objeto. O void* permite passar qualquer estrutura sem que
+ * o modulo chamado precise conhecer o tipo concreto.
+ *
+ * GERENCIAMENTO DE MEMORIA: a biblioteca e a DONA dos NodoMusica. Pilha,
+ * fila e playlists guardam apenas ponteiros para eles. Por isso verificamos
+ * todos os referencias antes de liberar: soltar o nodo com ponteiros ativos
+ * em outras estruturas causaria ponteiro invalido (uso apos free).
+ */
 int biblioteca_remover(ListaDupla *lib, NodoMusica *alvo, const Pilha *historico, const Fila *fila, int (*em_alguma_playlist)(const void *lp, const NodoMusica *m), const void *lista_playlists)
 {
     if (!alvo)
@@ -90,7 +121,7 @@ int biblioteca_remover(ListaDupla *lib, NodoMusica *alvo, const Pilha *historico
         return 0;
     }
 
-    /* Verifica se esta em alguma playlist (via callback) */
+    /* Verifica se esta em alguma playlist via callback — ve comentario acima */
     if (em_alguma_playlist && lista_playlists && em_alguma_playlist(lista_playlists, alvo))
     {
         printf("  Nao e possivel remover: musica esta em uma ou mais playlists.\n");

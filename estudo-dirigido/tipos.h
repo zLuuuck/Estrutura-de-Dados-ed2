@@ -24,8 +24,23 @@ typedef struct {
     int tam;
 } ListaDupla;
 
-/*  Pilha (histórico)  */
-/* Armazena PONTEIROS para NodoMusica da biblioteca, nunca cópias. */
+/*
+ * PROPRIEDADE DE MEMORIA: a biblioteca e a DONA de todos os NodoMusica.
+ * Pilha, fila e playlists armazenam apenas PONTEIROS para eles, nunca copias.
+ *
+ * Regra derivada disso: uma musica so pode ser removida da biblioteca se
+ * nenhuma outra estrutura ainda a referencie. Soltar o nodo com referencias
+ * ativas deixaria ponteiros pendentes (dangling pointers) apontando para
+ * memoria ja liberada — comportamento indefinido em C.
+ *
+ * Essa separacao entre dono e referenciador foi o conceito que mais exigiu
+ * atencao durante o desenvolvimento: cada funcao de liberacao (pilha_liberar,
+ * fila_liberar, playlist_lista_liberar) libera apenas seus proprios nodos de
+ * encadeamento, jamais os NodoMusica apontados.
+ */
+
+/*  Pilha (historico)  */
+/* Armazena PONTEIROS para NodoMusica da biblioteca, nunca copias. */
 typedef struct NodoPilha {
     NodoMusica       *musica;
     struct NodoPilha *prox;
@@ -51,10 +66,23 @@ typedef struct {
 
 /*  Playlists  */
 /*
- * Nodo invólucro para a lista interna de cada playlist.
- * Guarda um PONTEIRO para NodoMusica da biblioteca (nunca cópia) e tem seus
- * próprios prox/ant — necessário porque NodoMusica.prox/ant já são usados
- * pela cadeia da biblioteca; reutilizá-los aqui corromperia aquela lista.
+ * DIFICULDADE: wrapper EntradaPlaylist.
+ *
+ * Problema: queremos que a mesma musica possa aparecer em varias playlists
+ * ao mesmo tempo. A solucao ingenua seria usar os campos prox/ant do proprio
+ * NodoMusica para encadear as playlists — mas esses ponteiros ja pertencem
+ * a cadeia da biblioteca. Reutiliza-los aqui corromperia a lista da
+ * biblioteca inteira (dois "donos" do mesmo par de ponteiros).
+ *
+ * SOLUCAO: EntradaPlaylist e um involucro (wrapper) com seus proprios
+ * prox/ant e um ponteiro para o NodoMusica correto. Assim:
+ *   - A mesma musica pode estar em N playlists ao mesmo tempo.
+ *   - Cada playlist e uma lista dupla independente de EntradaPlaylist.
+ *   - A lista da biblioteca nao e afetada.
+ *
+ * APRENDIZADO: quando uma estrutura precisa aparecer em multiplos contextos
+ * de encadeamento simultaneamente em C, o padrao e usar nos involucro
+ * separados em vez de reutilizar os ponteiros do no original.
  */
 typedef struct EntradaPlaylist {
     NodoMusica             *musica;

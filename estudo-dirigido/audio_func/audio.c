@@ -1,6 +1,20 @@
 /*
- * Implementacao unica do miniaudio (macro de implementacao aqui, so uma vez).
- * Nenhum outro .c deve definir MA_IMPLEMENTATION.
+ * DIFICULDADE (ajuda de IA): a miniaudio e header-only — toda a implementacao
+ * fica em um unico arquivo .h. Para que o linker nao encontre simbolos
+ * duplicados, a macro MINIAUDIO_IMPLEMENTATION deve ser definida em EXATAMENTE
+ * um arquivo .c antes de incluir o header. Se fosse definida em mais de um
+ * .c, o compilador geraria multiplas definicoes do mesmo simbolo e o link
+ * falharia. Consultamos a IA para entender essa restricao e decidimos isolar
+ * a definicao aqui, em audio.c, que e o unico modulo que inclui miniaudio.h.
+ *
+ * APRENDIZADO: bibliotecas header-only sao praticas para distribuicao (basta
+ * copiar um arquivo), mas exigem esse cuidado na compilacao para evitar
+ * duplicacao de codigo objeto.
+ *
+ * ENCAPSULAMENTO: nenhum outro modulo inclui miniaudio.h diretamente.
+ * Toda a API de audio fica exposta apenas pelo audio.h de alto nivel,
+ * tornando facil trocar o engine de audio no futuro sem tocar no resto do
+ * sistema.
  */
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
@@ -9,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Estado interno */
+/* Estado interno — variaveis globais estaticas (visíveis so neste .c) */
 
 static ma_engine g_engine;  /* motor de audio miniaudio            */
 static ma_sound g_sound;    /* som atualmente carregado            */
