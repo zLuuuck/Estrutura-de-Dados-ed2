@@ -11,10 +11,6 @@
  * Recebe ponteiros para todas as estruturas globais e executa o loop principal.
  * So retorna quando o usuario escolher "Sair".
  */
-void menu_principal(ListaDupla     *biblioteca,
-                    ListaPlaylists *playlists,
-                    Pilha          *historico,
-                    Fila           *fila,
-                    EstadoPlayer   *estado);
+void menu_principal(ListaDupla *biblioteca, ListaPlaylists *playlists, Pilha *historico, Fila *fila, EstadoPlayer *estado);
 
 #endif /* MENU_H */

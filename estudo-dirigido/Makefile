@@ -26,26 +26,26 @@ endif
 #  Compilador e flags 
 CC      = gcc
 CFLAGS  = -std=c99 -Wall -Wextra -g $(POSIX_DEF) \
-          -I. \
-          -Ibiblioteca_func \
-          -Ipilha_func \
-          -Ifila_func \
-          -Iplaylist_func \
-          -Iinput_func \
-          -Iaudio_func \
-          -Iplayer_func \
-          -Imenu_func
+        -I. \
+        -Ibiblioteca_func \
+        -Ipilha_func \
+        -Ifila_func \
+        -Iplaylist_func \
+        -Iinput_func \
+        -Iaudio_func \
+        -Iplayer_func \
+        -Imenu_func
 
 #  Fontes e objetos 
 SRCS = main.c \
-       pilha_func/pilha.c \
-       fila_func/fila.c \
-       biblioteca_func/biblioteca.c \
-       playlist_func/playlist.c \
-       input_func/input.c \
-       audio_func/audio.c \
-       player_func/player.c \
-       menu_func/menu.c
+        pilha_func/pilha.c \
+        fila_func/fila.c \
+        biblioteca_func/biblioteca.c \
+        playlist_func/playlist.c \
+        input_func/input.c \
+        audio_func/audio.c \
+        player_func/player.c \
+        menu_func/menu.c
 
 OBJS = $(SRCS:.c=.o)
 
@@ -78,13 +78,13 @@ audio_func/audio.o: audio_func/audio.c audio_func/audio.h audio_func/miniaudio.h
 # Requer: sudo apt install mingw-w64
 windows:
 	x86_64-w64-mingw32-gcc -std=c99 -Wall -Wextra -O2 \
-	  -static-libgcc -static \
-	  -I. -Ibiblioteca_func -Ipilha_func -Ifila_func \
-	  -Iplaylist_func -Iinput_func -Iaudio_func \
-	  -Iplayer_func -Imenu_func \
-	  $(SRCS) \
-	  -o player.exe \
-	  -lole32 -lwinmm
+	-static-libgcc -static \
+	-I. -Ibiblioteca_func -Ipilha_func -Ifila_func \
+	-Iplaylist_func -Iinput_func -Iaudio_func \
+	-Iplayer_func -Imenu_func \
+	$(SRCS) \
+	-o player.exe \
+	-lole32 -lwinmm
 	@echo ""
 	@echo "  Compilado para Windows: player.exe"
 	@echo ""

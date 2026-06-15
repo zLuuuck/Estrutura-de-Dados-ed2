@@ -35,7 +35,8 @@ static void limpar_buffer(void)
 {
     int c;
     while ((c = getchar()) != '\n' && c != EOF)
-        ;
+    {
+    }
 }
 
 /* Le uma string com prompt; remove \n final; garante terminacao com '\0' */
@@ -47,7 +48,9 @@ static void ler_string(const char *prompt, char *buf, int tam)
     {
         int len = (int)strlen(buf);
         if (len > 0 && buf[len - 1] == '\n')
+        {
             buf[len - 1] = '\0';
+        }
     }
     else
     {
@@ -66,7 +69,9 @@ static int ler_inteiro(const char *prompt)
     if (scanf("%d", &val) != 1)
     {
         if (feof(stdin))
+        {
             return 0; /* EOF — sai de todos os menus limpo */
+        }
         limpar_buffer();
         return -1;
     }
@@ -96,7 +101,9 @@ static NodoMusica *selecionar_musica(const ListaDupla *lib)
 {
     biblioteca_listar(lib);
     if (!lib->inicio)
+    {
         return NULL;
+    }
     int n = ler_inteiro("  Numero da musica: ");
     if (n < 1 || n > lib->tam)
     {
@@ -105,7 +112,9 @@ static NodoMusica *selecionar_musica(const ListaDupla *lib)
     }
     NodoMusica *m = lib->inicio;
     for (int i = 1; i < n; i++)
+    {
         m = m->prox;
+    }
     return m;
 }
 
@@ -114,7 +123,9 @@ static NodoPlaylist *selecionar_playlist_num(const ListaPlaylists *lp)
 {
     playlist_listar(lp);
     if (!lp->inicio)
+    {
         return NULL;
+    }
     int n = ler_inteiro("  Numero da playlist: ");
     if (n < 1 || n > lp->tam)
     {
@@ -123,7 +134,9 @@ static NodoPlaylist *selecionar_playlist_num(const ListaPlaylists *lp)
     }
     NodoPlaylist *pl = lp->inicio;
     for (int i = 1; i < n; i++)
+    {
         pl = pl->prox;
+    }
     return pl;
 }
 
@@ -135,16 +148,28 @@ static void buscar_e_exibir(const ListaDupla *lib, const char *query, int por_ti
     while (n)
     {
         /* Comparacao case-insensitive via substring */
-        const char *campo = por_titulo ? n->titulo : n->artista;
+        const char *campo;
+        if (por_titulo)
+        {
+            campo = n->titulo;
+        }
+        else
+        {
+            campo = n->artista;
+        }
         /* Copia em minusculo para comparar */
         char campo_low[MAX_TITULO + MAX_ARTISTA];
         char query_low[MAX_TITULO + MAX_ARTISTA];
         int i;
         for (i = 0; campo[i] && i < (int)sizeof(campo_low) - 1; i++)
+        {
             campo_low[i] = (char)tolower((unsigned char)campo[i]);
+        }
         campo_low[i] = '\0';
         for (i = 0; query[i] && i < (int)sizeof(query_low) - 1; i++)
+        {
             query_low[i] = (char)tolower((unsigned char)query[i]);
+        }
         query_low[i] = '\0';
 
         if (strstr(campo_low, query_low))
@@ -161,16 +186,18 @@ static void buscar_e_exibir(const ListaDupla *lib, const char *query, int por_ti
         n = n->prox;
     }
     if (!achou)
+    {
         printf("  Nenhuma musica encontrada para \"%s\".\n", query);
+    }
 }
 
 /* Coleta campos da nova musica e verifica o arquivo de audio.
  * Retorna 1 em sucesso e preenche titulo, artista, caminho e duracao. */
 static int coletar_dados_musica(char *titulo, char *artista, char *caminho, int *duracao)
 {
-    ler_string("  Titulo  : ", titulo, MAX_TITULO);
-    ler_string("  Artista : ", artista, MAX_ARTISTA);
-    ler_string("  Caminho : ", caminho, MAX_CAMINHO);
+    ler_string("  Titulo : ", titulo, MAX_TITULO);
+    ler_string("  Artista: ", artista, MAX_ARTISTA);
+    ler_string("  Caminho: ", caminho, MAX_CAMINHO);
     if (titulo[0] == '\0' || caminho[0] == '\0')
     {
         printf("  Titulo e caminho sao obrigatorios.\n");
@@ -293,10 +320,11 @@ static void menu_biblioteca(ListaDupla *lib, ListaPlaylists *playlists, Pilha *h
                  * funcao recebido. Esse e o ponto de uniao que permite manter
                  * os dois modulos desacoplados (ver comentario em biblioteca.c).
                  */
-                int ok = biblioteca_remover(lib, alvo, historico, fila,
-                                            playlist_em_alguma, playlists);
+                int ok = biblioteca_remover(lib, alvo, historico, fila, playlist_em_alguma, playlists);
                 if (ok)
+                {
                     printf("  Musica removida.\n");
+                }
             }
             else
             {
@@ -371,11 +399,7 @@ static void menu_biblioteca(ListaDupla *lib, ListaPlaylists *playlists, Pilha *h
 /* ==========================================================================
  * Menu: Gerenciar uma playlist especifica
  * ========================================================================== */
-static void menu_playlist_interna(NodoPlaylist *pl,
-                                  ListaDupla *biblioteca,
-                                  EstadoPlayer *estado,
-                                  Pilha *historico,
-                                  Fila *fila)
+static void menu_playlist_interna(NodoPlaylist *pl, ListaDupla *biblioteca, EstadoPlayer *estado, Pilha *historico, Fila *fila)
 {
     int opcao;
     char titulo_menu[MAX_NOME_PL + 16];
@@ -411,7 +435,9 @@ static void menu_playlist_interna(NodoPlaylist *pl,
                 break;
             }
             if (playlist_adicionar_musica(pl, m))
+            {
                 printf("  \"%s\" adicionada a playlist.\n", m->titulo);
+            }
             aguardar_enter();
             break;
         }
@@ -436,9 +462,13 @@ static void menu_playlist_interna(NodoPlaylist *pl,
             }
             EntradaPlaylist *e = pl->inicio_musicas;
             for (int i = 1; i < n; i++)
+            {
                 e = e->prox;
+            }
             if (playlist_remover_musica(pl, e->musica))
+            {
                 printf("  Musica removida da playlist.\n");
+            }
             aguardar_enter();
             break;
         }
@@ -455,7 +485,9 @@ static void menu_playlist_interna(NodoPlaylist *pl,
             }
             estado->playlist_atual = pl;
             if (player_tocar(estado, primeira, historico))
+            {
                 player_loop(estado, historico, fila, biblioteca);
+            }
             estado->playlist_atual = NULL;
             estado->atual = NULL;
             break;
@@ -472,11 +504,7 @@ static void menu_playlist_interna(NodoPlaylist *pl,
 /* ==========================================================================
  * Menu: Playlists
  * ========================================================================== */
-static void menu_playlists(ListaPlaylists *playlists,
-                           ListaDupla *biblioteca,
-                           EstadoPlayer *estado,
-                           Pilha *historico,
-                           Fila *fila)
+static void menu_playlists(ListaPlaylists *playlists, ListaDupla *biblioteca, EstadoPlayer *estado, Pilha *historico, Fila *fila)
 {
     int opcao;
     do
@@ -511,7 +539,9 @@ static void menu_playlists(ListaPlaylists *playlists,
             }
             NodoPlaylist *nova = playlist_criar(playlists, nome);
             if (nova)
+            {
                 printf("  Playlist \"%s\" criada.\n", nova->nome);
+            }
             aguardar_enter();
             break;
         }
@@ -531,7 +561,9 @@ static void menu_playlists(ListaPlaylists *playlists,
             if (conf[0] == 's' || conf[0] == 'S')
             {
                 if (playlist_remover(playlists, pl))
+                {
                     printf("  Playlist removida.\n");
+                }
             }
             else
             {
@@ -565,10 +597,7 @@ static void menu_playlists(ListaPlaylists *playlists,
 /* ==========================================================================
  * Menu: Historico
  * ========================================================================== */
-static void menu_historico(Pilha *historico,
-                           EstadoPlayer *estado,
-                           Fila *fila,
-                           ListaDupla *biblioteca)
+static void menu_historico(Pilha *historico, EstadoPlayer *estado, Fila *fila, ListaDupla *biblioteca)
 {
     int opcao;
     do
@@ -601,7 +630,9 @@ static void menu_historico(Pilha *historico,
             printf("  Tocando: %s — %s\n", topo->titulo, topo->artista);
             estado->playlist_atual = NULL;
             if (player_tocar(estado, topo, historico))
+            {
                 player_loop(estado, historico, fila, biblioteca);
+            }
             estado->atual = NULL;
             break;
         }
@@ -624,10 +655,7 @@ static void menu_historico(Pilha *historico,
 /* ==========================================================================
  * Menu: Fila de reproducao
  * ========================================================================== */
-static void menu_fila(Fila *fila,
-                      ListaDupla *biblioteca,
-                      EstadoPlayer *estado,
-                      Pilha *historico)
+static void menu_fila(Fila *fila, ListaDupla *biblioteca, EstadoPlayer *estado, Pilha *historico)
 {
     int opcao;
     do
@@ -660,7 +688,9 @@ static void menu_fila(Fila *fila,
                 break;
             }
             if (fila_enqueue(fila, m))
+            {
                 printf("  \"%s\" adicionada a fila (posicao %d).\n", m->titulo, fila_tamanho(fila));
+            }
             aguardar_enter();
             break;
         }
@@ -677,7 +707,9 @@ static void menu_fila(Fila *fila,
             printf("  Tocando da fila: %s — %s\n", m->titulo, m->artista);
             estado->playlist_atual = NULL;
             if (player_tocar(estado, m, historico))
+            {
                 player_loop(estado, historico, fila, biblioteca);
+            }
             estado->atual = NULL;
             break;
         }
@@ -700,11 +732,7 @@ static void menu_fila(Fila *fila,
 /* ==========================================================================
  * Menu principal
  * ========================================================================== */
-void menu_principal(ListaDupla *biblioteca,
-                    ListaPlaylists *playlists,
-                    Pilha *historico,
-                    Fila *fila,
-                    EstadoPlayer *estado)
+void menu_principal(ListaDupla *biblioteca, ListaPlaylists *playlists, Pilha *historico, Fila *fila, EstadoPlayer *estado)
 {
     int opcao;
     do
@@ -742,7 +770,9 @@ void menu_principal(ListaDupla *biblioteca,
             printf("  Tocando: %s — %s\n", m->titulo, m->artista);
             estado->playlist_atual = NULL;
             if (player_tocar(estado, m, historico))
+            {
                 player_loop(estado, historico, fila, biblioteca);
+            }
             estado->atual = NULL;
             break;
         }

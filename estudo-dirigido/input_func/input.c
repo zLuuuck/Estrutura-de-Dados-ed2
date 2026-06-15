@@ -82,7 +82,9 @@ void input_modo_normal(void)
 void input_modo_raw(void)
 {
     if (modo_raw_ativo)
+    {
         return; /* ja configurado */
+    }
 
     /* Salva estado original para restaurar depois */
     tcgetattr(STDIN_FILENO, &termios_original);
@@ -130,7 +132,9 @@ int input_ler_tecla(void)
 {
     unsigned char c = 0;
     if (read(STDIN_FILENO, &c, 1) != 1)
+    {
         return -1;
+    }
     return (int)c;
 }
 

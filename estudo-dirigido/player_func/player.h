@@ -11,9 +11,7 @@
  * Carrega o audio, empilha no historico e atualiza estado->atual.
  * Retorna 1 em sucesso, 0 em falha de audio_load.
  */
-int player_tocar(EstadoPlayer *estado,
-                 NodoMusica   *musica,
-                 Pilha        *historico);
+int player_tocar(EstadoPlayer *estado, NodoMusica *musica, Pilha *historico);
 
 /*
  * Loop de reproducao ao vivo.
@@ -34,9 +32,6 @@ int player_tocar(EstadoPlayer *estado,
  *   fila       — fila de reproducao (mutavel)
  *   biblioteca — lista da biblioteca para shuffle/anterior sem playlist
  */
-void player_loop(EstadoPlayer  *estado,
-                 Pilha         *historico,
-                 Fila          *fila,
-                 ListaDupla    *biblioteca);
+void player_loop(EstadoPlayer *estado, Pilha *historico, Fila *fila, ListaDupla *biblioteca);
 
 #endif /* PLAYER_H */

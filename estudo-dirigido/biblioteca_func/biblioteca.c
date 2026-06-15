@@ -16,7 +16,9 @@
 static int contem_ignorando_case(const char *texto, const char *padrao)
 {
     if (!texto || !padrao)
+    {
         return 0;
+    }
 
     /* copia em minusculo para nao alterar os originais */
     char t[MAX_TITULO + MAX_ARTISTA];
@@ -24,11 +26,15 @@ static int contem_ignorando_case(const char *texto, const char *padrao)
     int i;
 
     for (i = 0; texto[i] && i < (int)sizeof(t) - 1; i++)
+    {
         t[i] = (char)tolower((unsigned char)texto[i]);
+    }
     t[i] = '\0';
 
     for (i = 0; padrao[i] && i < (int)sizeof(p) - 1; i++)
+    {
         p[i] = (char)tolower((unsigned char)padrao[i]);
+    }
     p[i] = '\0';
 
     return strstr(t, p) != NULL;
@@ -105,7 +111,9 @@ NodoMusica *biblioteca_cadastrar(ListaDupla *lib, const char *titulo, const char
 int biblioteca_remover(ListaDupla *lib, NodoMusica *alvo, const Pilha *historico, const Fila *fila, int (*em_alguma_playlist)(const void *lp, const NodoMusica *m), const void *lista_playlists)
 {
     if (!alvo)
+    {
         return 0;
+    }
 
     /* Verifica se esta no historico */
     if (historico && pilha_contem(historico, alvo))
@@ -130,14 +138,22 @@ int biblioteca_remover(ListaDupla *lib, NodoMusica *alvo, const Pilha *historico
 
     /* Desencadeia da lista dupla */
     if (alvo->ant)
+    {
         alvo->ant->prox = alvo->prox;
+    }
     else
+    {
         lib->inicio = alvo->prox; /* era o primeiro */
+    }
 
     if (alvo->prox)
+    {
         alvo->prox->ant = alvo->ant;
+    }
     else
+    {
         lib->fim = alvo->ant; /* era o ultimo */
+    }
 
     free(alvo);
     lib->tam--;
@@ -162,17 +178,17 @@ NodoMusica *biblioteca_inserir_inicio(ListaDupla *lib, const char *titulo, const
     novo->caminho[MAX_CAMINHO - 1] = '\0';
     novo->duracao = duracao;
     novo->prox = lib->inicio;
-    novo->ant  = NULL;
+    novo->ant = NULL;
 
     if (!lib->inicio)
     {
         lib->inicio = novo;
-        lib->fim    = novo;
+        lib->fim = novo;
     }
     else
     {
         lib->inicio->ant = novo;
-        lib->inicio      = novo;
+        lib->inicio = novo;
     }
     lib->tam++;
     return novo;
@@ -182,9 +198,13 @@ NodoMusica *biblioteca_inserir_inicio(ListaDupla *lib, const char *titulo, const
 NodoMusica *biblioteca_inserir_em_posicao(ListaDupla *lib, int pos, const char *titulo, const char *artista, const char *caminho, int duracao)
 {
     if (pos <= 1)
+    {
         return biblioteca_inserir_inicio(lib, titulo, artista, caminho, duracao);
+    }
     if (pos > lib->tam)
+    {
         return biblioteca_cadastrar(lib, titulo, artista, caminho, duracao);
+    }
 
     NodoMusica *novo = (NodoMusica *)malloc(sizeof(NodoMusica));
     if (!novo)
@@ -204,16 +224,22 @@ NodoMusica *biblioteca_inserir_em_posicao(ListaDupla *lib, int pos, const char *
     /* Navega ate o no que ficara imediatamente antes do novo */
     NodoMusica *anterior = lib->inicio;
     for (int i = 1; i < pos - 1; i++)
+    {
         anterior = anterior->prox;
+    }
 
     NodoMusica *proximo = anterior->prox;
-    novo->ant  = anterior;
+    novo->ant = anterior;
     novo->prox = proximo;
     anterior->prox = novo;
     if (proximo)
+    {
         proximo->ant = novo;
+    }
     else
+    {
         lib->fim = novo;
+    }
 
     lib->tam++;
     return novo;
@@ -226,7 +252,9 @@ NodoMusica *biblioteca_buscar_titulo(const ListaDupla *lib, const char *titulo)
     while (atual)
     {
         if (contem_ignorando_case(atual->titulo, titulo))
+        {
             return atual;
+        }
         atual = atual->prox;
     }
     return NULL;
@@ -239,7 +267,9 @@ NodoMusica *biblioteca_buscar_artista(const ListaDupla *lib, const char *artista
     while (atual)
     {
         if (contem_ignorando_case(atual->artista, artista))
+        {
             return atual;
+        }
         atual = atual->prox;
     }
     return NULL;
