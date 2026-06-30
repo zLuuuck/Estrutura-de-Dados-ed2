@@ -1,0 +1,376 @@
+\documentclass[
+    12pt
+    ,oneside
+    ,a4paper
+    ,chapter=TITLE
+    ,section=TITLE
+    ,sumario=abnt-6027-2012]{abntex2}
+
+% Carrega o pacote da abnt com as adapatções para normas da Tuiuti
+\usepackage{../packages/abnt-UTP}
+%\usepackage[alf]{abntex2cite}
+
+\renewcommand{\tt}{\ttfamily}
+
+% =================================================================================================
+% -------------------------------------------------------------------------------------------------
+% - INFORMAÇÕES GERAIS                                                                            -
+% -------------------------------------------------------------------------------------------------
+% =================================================================================================
+
+% Informações para CAPA e FOLHA DE ROSTO
+\titulo{Relatório de Estudo Dirigido: Player de Música em C}
+
+\autor{Caio Federico Esquivel Lovera Arze\\
+        Lucas Toterol Rodrigues}
+
+\orientador{Prof. Luiz Adolpho Baroni}
+
+\preambulo{Estudo dirigido apresentado ao curso de Análise e Desenvolvimento de Sistemas, da Universidade Tuiuti do Paraná, como requisito avaliativo do 2º bimestre da disciplina de Estrutura de Dados.}
+
+\instituicao{Universidade Tuiuti do Paraná}
+\local{Curitiba}
+\data{\the\year}
+
+
+\begin{document}
+
+% =================================================================================================
+% -------------------------------------------------------------------------------------------------
+% - ELEMENTOS PRÉ-TEXTUAIS                                                                        -
+% -------------------------------------------------------------------------------------------------
+% =================================================================================================
+
+% -------------------------------------------------------------------------------------------------
+% Cria a capa e a folha de rosto
+\imprimircapa
+\imprimirfolhaderosto
+
+\begin{resumo}
+Este trabalho descreve um player de música interativo escrito em linguagem C. A proposta foi colocar em prática as estruturas de dados dinâmicas vistas no bimestre: lista duplamente encadeada, pilha e fila, todas com alocação dinâmica de memória. A biblioteca de músicas é armazenada em uma lista duplamente encadeada. O histórico de reprodução é uma pilha encadeada, e a fila de reprodução, uma fila encadeada. As playlists também são listas duplamente encadeadas, mas cada uma mantém internamente uma lista de invólucros, que apontam para as músicas da biblioteca sem copiá-las. Para a reprodução dos arquivos, integrou-se a biblioteca miniaudio, e a leitura de teclado sem bloqueio permite ao usuário controlar a reprodução em tempo real. O código foi separado em módulos, com um diretório por responsabilidade. Durante o desenvolvimento surgiram dificuldades relevantes: impedir a remoção de músicas em uso, evitar dependência circular entre os módulos, integrar o áudio em tempo real e viabilizar a entrada de teclado não bloqueante nos dois sistemas operacionais. Ao final, o sistema mostrou-se funcional, com menu interativo, reprodução real dos arquivos e navegação completa entre músicas, playlists e histórico.
+
+    \palavraschave{Estruturas de dados; Lista duplamente encadeada; Pilha; Fila; Linguagem C; Player de música}
+\end{resumo}
+
+
+\begin{siglas}
+    \item[API] Application Programming Interface (Interface de Programação de Aplicações)
+    \item[CLI] Command Line Interface (Interface de Linha de Comando)
+    \item[ED] Estudo Dirigido
+    \item[FIFO] First In, First Out (Primeiro a Entrar, Primeiro a Sair)
+    \item[IA] Inteligência Artificial
+    \item[LIFO] Last In, First Out (Último a Entrar, Primeiro a Sair)
+\end{siglas}
+
+
+\sumario
+
+\textual
+
+% -------------------------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------------------------
+% 1. INTRODUÇÃO
+% -------------------------------------------------------------------------------------------------
+% -------------------------------------------------------------------------------------------------
+\chapter{Introdução}
+\label{cap:introducao}
+
+Neste estudo dirigido foi desenvolvido um player de música interativo em linguagem C. A intenção era aplicar na prática as estruturas de dados dinâmicas trabalhadas no segundo bimestre. O trabalho anterior usava vetores de tamanho fixo; aqui adotou-se a alocação dinâmica de memória, com listas encadeadas, pilhas e filas construídas a partir de ponteiros.
+
+O sistema permite cadastrar músicas em uma biblioteca, organizá-las em playlists, enfileirar faixas para tocar em sequência e retornar pelo histórico de reprodução. A reprodução é real, realizada pela biblioteca miniaudio, e o controle durante a execução ocorre diretamente pelo teclado, sem a necessidade de pressionar ENTER a cada comando.
+
+O foco principal era demonstrar como combinar essas estruturas para resolver um problema concreto. Além disso, evidenciou-se o ganho do encadeamento em memória frente aos vetores estáticos: não há limite fixo de capacidade e os nodos são alocados conforme a necessidade.
+
+\section{Objetivos}
+
+O objetivo geral foi construir um sistema em C que simulasse um player de música completo, com gerenciamento de biblioteca, playlists, fila de reprodução e histórico, sempre apoiado em estruturas de dados dinâmicas. Para chegar nesse resultado, definiram-se os seguintes objetivos específicos:
+
+\begin{itemize}
+    \item Implementar uma lista duplamente encadeada para a biblioteca de músicas e para as playlists;
+    \item Usar uma pilha encadeada como histórico de reprodução;
+    \item Usar uma fila encadeada como fila de reprodução;
+    \item Integrar a reprodução real de áudio por meio da biblioteca miniaudio;
+    \item Implementar o controle de teclado sem bloqueio em mais de um sistema operacional;
+    \item Organizar o código de forma modular, com um diretório por responsabilidade.
+\end{itemize}
+
+\section{Descrição do Problema}
+
+O sistema simula um player completo operado pelo terminal. No cadastro, o usuário informa título, artista e caminho do arquivo, enquanto a duração é detectada automaticamente pelo próprio motor de áudio. As músicas ficam na biblioteca, uma lista duplamente encadeada que pode ser percorrida nos dois sentidos.
+
+Durante a reprodução, é possível avançar ou retroceder faixas, pular para a próxima música da fila, ativar o modo aleatório (shuffle) ou pausar e retomar. Cada música que toca entra no histórico de forma automática. Também é possível criar playlists, adicionar músicas a elas e tocar a partir delas.
+
+Há uma regra que precisa ser respeitada: uma música não pode ser removida da biblioteca enquanto ainda estiver referenciada no histórico, na fila ou em alguma playlist. Sem essa proteção, os ponteiros armazenados nessas estruturas passariam a referenciar memória inválida.
+
+% -------------------------------------------------------------------------------------------------
+% 2. FUNDAMENTAÇÃO TEÓRICA
+% -------------------------------------------------------------------------------------------------
+\chapter{Fundamentação Teórica}
+\label{cap:fundamentacao}
+
+Este capítulo reúne os conceitos que serviram de base para o sistema, com apoio nas referências utilizadas \cite{bhargava2017,baroni2026slides}.
+
+\section{Estrutura de Dados: Lista Duplamente Encadeada}
+
+Na lista duplamente encadeada, cada nodo guarda dois ponteiros: um para o nodo seguinte (\texttt{prox}) e outro para o anterior (\texttt{ant}). É essa bidirecionalidade que permite percorrer a lista nas duas direções sem ter de voltar sempre ao início.
+
+Como cada nodo é alocado dinamicamente, não existe tamanho máximo definido em tempo de compilação. Tendo um ponteiro para o nodo alvo, inserir ou remover no meio da lista custa O(1), bastando ajustar os ponteiros dos vizinhos. No projeto, essa estrutura aparece na biblioteca principal de músicas e também na lista interna de cada playlist.
+
+\section{Estrutura de Dados: Pilha Encadeada}
+
+A pilha encadeada segue a política LIFO (Last In, First Out) sobre uma lista simplesmente encadeada, em que o topo é sempre o primeiro nodo. Empilhar (push) e desempilhar (pop) custam O(1), pois atuam apenas no topo, e a estrutura cresce conforme a demanda, sem limite fixo.
+
+Aqui a pilha guarda ponteiros para os \texttt{NodoMusica} da biblioteca e funciona como histórico de reprodução. Guardar ponteiros em vez de cópias evita duplicar dados e mantém o histórico sempre apontando para os dados originais da biblioteca.
+
+\section{Estrutura de Dados: Fila Encadeada}
+
+Já a fila encadeada segue a política FIFO (First In, First Out), também sobre uma lista simplesmente encadeada, mas com ponteiros para o início e para o fim. O enqueue insere no fim e o dequeue remove do início, os dois em O(1). Assim como a pilha, ela não tem limite fixo de capacidade.
+
+No player, a fila de reprodução guarda ponteiros para \texttt{NodoMusica} e define a ordem das próximas faixas. Enquanto houver algo nela, a fila tem prioridade sobre a sequência da biblioteca ou da playlist.
+
+\section{Gerenciamento de Memória e Política de Remoção}
+
+O ponto central do projeto é a diferença entre proprietário e referenciador. A dona dos \texttt{NodoMusica} é a biblioteca, e só ela aloca e libera esses nodos. Pilha, fila e playlists guardam apenas ponteiros para eles. Daí a regra de não remover uma música da biblioteca enquanto alguma estrutura ainda a referencie: liberar o nodo deixaria ponteiros pendentes apontando para memória já liberada, o que resulta em comportamento indefinido.
+
+\section{A Escolha das Estruturas}
+
+A biblioteca usa lista duplamente encadeada porque a navegação nos dois sentidos é essencial, já que avançar e voltar na ordem das músicas são operações igualmente comuns. O histórico pediu naturalmente uma pilha, pois a última música tocada é, em geral, a primeira a ser consultada. Por sua vez, a fila descreve bem uma lista de reprodução agendada, em que a primeira faixa enfileirada é a primeira a tocar.
+
+% -------------------------------------------------------------------------------------------------
+% 3. PLANEJAMENTO INICIAL
+% -------------------------------------------------------------------------------------------------
+\chapter{Planejamento Inicial}
+\label{cap:planejamento}
+
+\section{Interpretação do Problema}
+
+A partir do enunciado, levantaram-se as principais entidades do sistema: \texttt{NodoMusica} (título, artista, caminho do arquivo e duração), \texttt{ListaDupla} (a biblioteca), \texttt{Pilha} (o histórico), \texttt{Fila} (a fila de reprodução), \texttt{NodoPlaylist} (nome e lista interna de músicas) e \texttt{EstadoPlayer} (o estado atual da reprodução).
+
+O fluxo básico ficou assim:
+
+\begin{enumerate}
+    \item Cadastro de músicas pelo usuário, com a duração detectada automaticamente pelo áudio;
+    \item Reprodução de uma música, que envolve carregar o arquivo no engine, empilhar no histórico e atualizar o estado;
+    \item Loop de reprodução ao vivo, atualizando a barra de status e lendo as teclas sem bloquear;
+    \item No fim de cada música, olhar a fila, a playlist ou a biblioteca para decidir a próxima faixa;
+    \item Gerenciamento de playlists, com criação, adição e remoção de músicas e reprodução a partir delas;
+    \item Remoção segura de músicas, checando o uso em pilha, fila e playlists antes de liberar o nodo.
+\end{enumerate}
+
+\section{Estruturas que Serão Utilizadas}
+
+Depois dessa análise, definiram-se as escolhas:
+
+\begin{itemize}
+    \item \textbf{Lista Duplamente Encadeada}: para a biblioteca e para a lista interna de cada playlist, por causa da navegação nos dois sentidos.
+    \item \textbf{Pilha Encadeada}: para o histórico, em que o acesso mais recente é o mais relevante.
+    \item \textbf{Fila Encadeada}: para a fila de reprodução, respeitando a ordem FIFO.
+    \item \textbf{Lista de Playlists}: também uma lista duplamente encadeada de \texttt{NodoPlaylist}, com cada nodo carregando uma lista interna de \texttt{EntradaPlaylist} (os invólucros com ponteiro para \texttt{NodoMusica}).
+    \item \textbf{Structs em tipos.h}: para centralizar as definições de tipos e cortar a dependência circular entre os módulos.
+\end{itemize}
+
+% -------------------------------------------------------------------------------------------------
+% 4. IMPLEMENTAÇÃO
+% -------------------------------------------------------------------------------------------------
+\chapter{Implementação}
+\label{cap:implementacao}
+
+O desenvolvimento foi colaborativo do início ao fim. Os dois integrantes discutiram cada decisão de projeto e escreveram o código juntos, usando pair programming.
+
+\section{Inicialização do Repositório do GitHub}
+
+Para controle de versão e colaboração, criou-se um repositório privado no GitHub. A cada novo módulo, eram realizados commits com mensagens descritivas. Isso manteve o histórico do desenvolvimento rastreável e permitiu reverter alterações quando necessário.
+
+\section{Estrutura de Arquivos e Makefile}
+
+A organização é modular, com um diretório para cada componente:
+
+\begin{itemize}
+    \item \texttt{tipos.h}: definições centrais de todos os tipos (\texttt{NodoMusica}, \texttt{Pilha}, \texttt{Fila}, \texttt{ListaPlaylists}, \texttt{EstadoPlayer});
+    \item \texttt{biblioteca\_func/}: lista duplamente encadeada da biblioteca;
+    \item \texttt{pilha\_func/}: pilha encadeada (histórico);
+    \item \texttt{fila\_func/}: fila encadeada (fila de reprodução);
+    \item \texttt{playlist\_func/}: lista de playlists e suas operações;
+    \item \texttt{audio\_func/}: wrapper sobre a biblioteca miniaudio;
+    \item \texttt{input\_func/}: teclado não bloqueante (Windows e Linux);
+    \item \texttt{player\_func/}: loop de reprodução ao vivo;
+    \item \texttt{menu\_func/}: todos os menus de texto;
+    \item \texttt{main.c}: ponto de entrada.
+\end{itemize}
+
+O Makefile detecta automaticamente a plataforma (Linux ou Windows via MinGW) e ajusta o executável gerado (\texttt{player} ou \texttt{player.exe}), as bibliotecas de link (\texttt{-lpthread -lm -ldl} no Linux e \texttt{-lole32 -lwinmm} no Windows) e o comando de limpeza. As flags \texttt{-Wall -Wextra -std=c99 -g} mantêm o rigor na compilação. Criou-se ainda uma regra extra, \texttt{make windows}, para cross-compilar do Linux para Windows com o MinGW-w64.
+
+\section{Implementação da Biblioteca (Lista Duplamente Encadeada)}
+
+A biblioteca é uma \texttt{ListaDupla} com ponteiros \texttt{inicio} e \texttt{fim} e um contador \texttt{tam}. Cada \texttt{NodoMusica} é alocado dinamicamente e entra no fim da lista. A busca por título e por artista usa correspondência parcial e ignora maiúsculas e minúsculas, passando as strings para minúsculo em buffers temporários antes de chamar o \texttt{strstr}. A remoção exige mais cuidado: antes de liberar a memória, verifica, por meio de um callback, se o nodo está sendo usado em outra estrutura.
+
+\section{Implementação da Pilha Encadeada}
+
+A pilha é uma lista simplesmente encadeada com um ponteiro \texttt{topo}. Cada \texttt{NodoPilha} guarda apenas um ponteiro para \texttt{NodoMusica}, nunca uma cópia. O push aloca um \texttt{NodoPilha} novo e o encadeia no topo; o pop remove esse \texttt{NodoPilha} e o libera, mas nunca acessa o \texttt{NodoMusica} apontado. A \texttt{pilha\_liberar} aplica o mesmo princípio em escala: libera apenas os \texttt{NodoPilha} e mantém os \texttt{NodoMusica} intactos.
+
+\section{Implementação da Fila Encadeada}
+
+A fila tem ponteiros \texttt{inicio} e \texttt{fim} e, como a pilha, guarda ponteiros para \texttt{NodoMusica} sem duplicar dados. O enqueue aloca um \texttt{NodoFila} e o encadeia no fim; o dequeue remove o primeiro e devolve o ponteiro da música. Ao avançar para a próxima faixa, é a fila que tem prioridade dentro do loop do player.
+
+\section{Implementação das Playlists}
+
+As playlists ficam em uma \texttt{ListaPlaylists}, que é uma lista duplamente encadeada de \texttt{NodoPlaylist}. Por dentro, cada playlist tem outra lista duplamente encadeada, dessa vez de \texttt{EntradaPlaylist}: invólucros (wrappers) com um ponteiro para \texttt{NodoMusica} e \texttt{prox}/\texttt{ant} próprios. Essa separação não é arbitrária. Os ponteiros \texttt{prox} e \texttt{ant} do \texttt{NodoMusica} já pertencem à cadeia da biblioteca; reaproveitá-los nas listas internas das playlists corromperia a biblioteca.
+
+\section{Integração de Áudio Real}
+
+A reprodução é construída sobre a biblioteca miniaudio \cite{reid2024miniaudio} (o arquivo único \texttt{miniaudio.h}), um motor de áudio multiplataforma de código aberto escrito em C. Criou-se o módulo \texttt{audio\_func/} para encapsular toda a API do miniaudio e expor apenas funções de alto nível: \texttt{audio\_init}, \texttt{audio\_load}, \texttt{audio\_play}, \texttt{audio\_pause}, \texttt{audio\_resume}, \texttt{audio\_seek\_relative} e \texttt{audio\_stop}. Nenhum outro módulo inclui o \texttt{miniaudio.h} diretamente, de modo que toda a complexidade da biblioteca fica concentrada em um único local.
+
+\section{Controle de Teclado Não Bloqueante}
+
+O módulo \texttt{input\_func/} lê o teclado sem bloqueio nos dois sistemas. No Linux, o terminal é colocado em modo raw com \texttt{tcsetattr}, desligando o modo canônico e o eco, e o \texttt{select} verifica se há bytes disponíveis antes de chamar o \texttt{read} \cite{manpages_linux}. No Windows, utilizam-se \texttt{\_kbhit} e \texttt{\_getch} da \texttt{conio.h}. A \texttt{input\_modo\_normal} é registrada com \texttt{atexit}, o que restaura o terminal mesmo em uma saída abrupta.
+
+\section{Loop de Reprodução ao Vivo}
+
+O \texttt{player\_loop} reescreve a barra de status do terminal a cada 200 ms, cinco vezes por segundo, sobrescrevendo a linha atual com \texttt{\textbackslash r} e chamando \texttt{fflush(stdout)}. No mesmo intervalo, ele verifica duas condições: se a música terminou (por meio de \texttt{audio\_is\_at\_end}), para avançar automaticamente, e se há tecla disponível, para tratar os comandos. A escolha da próxima música obedece a uma ordem de prioridade: primeiro a fila de reprodução, depois a próxima da playlist atual (ou uma aleatória, no shuffle) e, por último, a próxima da biblioteca (de novo aleatória, se o shuffle estiver ligado).
+
+\section{Testes e Validações}
+
+Os testes foram manuais e cobriram:
+
+\begin{itemize}
+    \item Inserção e remoção na lista duplamente encadeada, conferindo \texttt{prox} e \texttt{ant} nos extremos e no meio;
+    \item Empilhamento e desempilhamento, confirmando que só os \texttt{NodoPilha} eram liberados e que os \texttt{NodoMusica} seguiam intactos;
+    \item Enfileiramento e desenfileiramento, checando a ordem FIFO;
+    \item Tentativa de remover músicas que estavam em uso na pilha, na fila e em playlists, para ver se as mensagens de bloqueio apareciam;
+    \item Reprodução de arquivos \texttt{.mp3} e \texttt{.flac} reais, verificando a detecção de duração e o avanço e retrocesso de posição;
+    \item Restauração do terminal depois de sair com \texttt{q} ou de uma interrupção abrupta.
+\end{itemize}
+
+\section{Dificuldades e Aprendizados}
+
+Algumas etapas exigiram mais esforço e pesquisa adicional. As principais estão descritas a seguir.
+
+\subsection{Gerenciamento de Propriedade de Memória}
+
+Acompanhar qual estrutura é proprietária de um nodo (a biblioteca) e qual apenas o referencia (pilha, fila e playlists) exigiu atenção constante. Liberar um \texttt{NodoMusica} com ponteiros ainda apontando para ele daria comportamento indefinido. O problema foi resolvido com a verificação de uso antes de qualquer remoção da biblioteca, somada à garantia de que \texttt{pilha\_liberar} e \texttt{fila\_liberar} nunca acessam os \texttt{NodoMusica}.
+
+\subsection{Dependência Circular entre Módulos}
+
+A \texttt{biblioteca\_remover} precisa saber se uma música está em alguma playlist, só que o módulo \texttt{biblioteca\_func} não pode incluir o \texttt{playlist\_func} (que inclui o \texttt{tipos.h} e fecharia um ciclo). A saída foi um callback: a \texttt{biblioteca\_remover} recebe um ponteiro de função \texttt{em\_alguma\_playlist} e um \texttt{void*} genérico para a lista de playlists. Quem chama, no caso o menu, passa \texttt{playlist\_em\_alguma} e \texttt{\&playlists}, e os módulos seguem desacoplados.
+
+\subsection{Wrapper de EntradaPlaylist}
+
+Conforme já mencionado, os \texttt{prox} e \texttt{ant} do \texttt{NodoMusica} pertencem à cadeia da biblioteca. Se uma playlist utilizasse esses mesmos ponteiros para encadear as músicas, as duas listas entrariam em conflito. Por isso o tipo \texttt{EntradaPlaylist}, um invólucro com \texttt{prox} e \texttt{ant} próprios e um ponteiro para o \texttt{NodoMusica} certo. Assim a mesma música pode estar em várias playlists ao mesmo tempo, sem conflito.
+
+\subsection{Integração da Biblioteca miniaudio}
+
+A miniaudio é header-only, portanto a macro \texttt{MINIAUDIO\_IMPLEMENTATION} deve ser definida em exatamente um arquivo \texttt{.c} antes do header \cite{reid2024miniaudio}. Defini-la em mais de um arquivo geraria símbolo duplicado no linker. Para evitar isso, manteve-se a macro apenas no \texttt{audio\_func/audio.c} e adicionou-se uma regra própria no Makefile para compilar esse arquivo sem as flags de aviso extras, que geram um volume excessivo de alertas quando aplicadas a código de terceiros.
+
+\subsection{Teclado Não Bloqueante Multiplataforma}
+
+No Linux, a entrada do terminal é canônica por padrão: os caracteres ficam no buffer até o ENTER. Para o loop em tempo real, era necessário ler tecla por tecla, sem bloquear. Implementou-se o \texttt{input\_modo\_raw} com \texttt{tcgetattr}/\texttt{tcsetattr} para desligar o modo canônico e o eco, e utilizou-se \texttt{select} com timeout zero para verificar se há tecla disponível sem permanecer em espera \cite{manpages_linux}. No Windows, \texttt{\_kbhit}/\texttt{\_getch} fornecem esse comportamento nativamente.
+
+\subsection{Restauração Segura do Terminal}
+
+Caso o programa fosse encerrado abruptamente (por um Ctrl+C, por exemplo) com o terminal em modo raw, o usuário ficaria com o terminal inutilizável. Registrou-se a \texttt{input\_modo\_normal} com \texttt{atexit} para garantir a restauração em qualquer caminho de saída.
+
+\subsection{Pausa Portável sem usleep}
+
+Esperar 200 ms entre as iterações do loop sem \texttt{usleep} (que pede \texttt{\_BSD\_SOURCE} ou \texttt{\_XOPEN\_SOURCE >= 500} e não existe no Windows) levou a uma função auxiliar, a \texttt{dormir\_ms}, baseada no \texttt{nanosleep} do POSIX.1b \cite{manpages_linux}. No Windows, o equivalente é o \texttt{Sleep} da \texttt{windows.h}, escolhido pela macro \texttt{\_WIN32}.
+
+\subsection{Tratamento de Buffer de Entrada nos Menus}
+
+O mesmo problema do trabalho anterior reapareceu: o \texttt{scanf} deixa o \texttt{\textbackslash n} no buffer, prejudicando a leitura seguinte. A solução foi consumir os caracteres restantes com \texttt{getchar()} em um laço até encontrar \texttt{\textbackslash n} ou EOF, sem recorrer ao \texttt{fflush(stdin)}, cujo comportamento é indefinido fora do Windows \cite{cppreference_fflush}.
+
+\section{Decisões Feitas Durante o Desenvolvimento}
+
+As principais decisões de arquitetura e design ao longo do projeto foram estas:
+
+\begin{enumerate}
+    \item \textbf{Tipos centralizados em tipos.h}: juntar todos os \texttt{typedef} num único arquivo, incluído por todos os módulos, evitou espalhar forward declarations e simplificou as dependências.
+    \item \textbf{Pilha e fila guardam ponteiros, não cópias}: duplicar os \texttt{NodoMusica} em cada estrutura desperdiçaria memória e ainda exigiria sincronizar tudo a cada alteração. Com ponteiros, todas as estruturas compartilham a mesma fonte de verdade, a biblioteca.
+    \item \textbf{Wrapper EntradaPlaylist}: como os ponteiros de encadeamento do \texttt{NodoMusica} já estavam em uso pela biblioteca, o invólucro separado foi o que deixou a mesma música aparecer em várias playlists sem corromper nenhuma lista.
+    \item \textbf{Callback na biblioteca\_remover}: em vez de criar dependência direta da \texttt{biblioteca\_func} sobre a \texttt{playlist\_func}, passou-se a função de verificação como parâmetro, mantendo o acoplamento no mínimo.
+    \item \textbf{Encapsulamento total da miniaudio}: só o \texttt{audio\_func} inclui o \texttt{miniaudio.h}. Isso isola a API de terceiros e facilita uma eventual substituição do motor de áudio.
+    \item \textbf{atexit para restaurar o terminal}: garantir o terminal restaurado em qualquer saída foi decisão de robustez. Sem ela, uma saída por sinal ou por \texttt{exit()} direto deixaria o terminal inutilizável.
+    \item \textbf{Makefile multiplataforma}: suportar Linux e Windows no mesmo Makefile, com a regra \texttt{make windows} para cross-compilar com MinGW-w64, simplificou a distribuição do executável.
+\end{enumerate}
+
+\section{Uso de IA no Projeto}
+
+Utilizaram-se assistentes de IA (ChatGPT e Claude) como apoio em alguns pontos:
+
+\begin{itemize}
+    \item Dúvidas sobre a API do \texttt{tcsetattr} e do \texttt{select} para o modo raw do terminal no Linux;
+    \item As restrições da macro \texttt{MINIAUDIO\_IMPLEMENTATION} e como fugir de símbolos duplicados no linker;
+    \item A ideia do callback para quebrar a dependência circular entre biblioteca e playlist;
+    \item A escrita do Makefile multiplataforma, com detecção automática do sistema operacional.
+\end{itemize}
+
+Todo o código gerado ou sugerido por IA passou por revisão, teste e integração pela equipe, de modo que cada decisão tomada foi compreendida. O uso dessas ferramentas segue as diretrizes do professor, que incentiva o aprendizado crítico e a validação das informações.
+
+% -------------------------------------------------------------------------------------------------
+% 5. TECNOLOGIAS UTILIZADAS
+% -------------------------------------------------------------------------------------------------
+\chapter{Tecnologias Utilizadas}
+\label{cap:tecnologias}
+
+As tecnologias e ferramentas usadas no estudo dirigido foram:
+
+\begin{itemize}
+    \item \textbf{Linguagem C (padrão C99)}: para todo o sistema.
+    \item \textbf{GCC (GNU Compiler Collection)}: compilador no Linux e no Windows (via MinGW-w64).
+    \item \textbf{Make / mingw32-make}: automação da compilação pelo Makefile.
+    \item \textbf{miniaudio}: biblioteca header-only de código aberto para áudio em C, com suporte a MP3, WAV, FLAC e outros formatos.
+    \item \textbf{Git e GitHub}: controle de versão e hospedagem do repositório.
+    \item \textbf{Visual Studio Code}: editor de código com extensões para C/C++.
+    \item \textbf{Valgrind (Linux)}: detecção de vazamentos de memória, utilizado para confirmar que só os nodos de encadeamento eram liberados, e não os \texttt{NodoMusica}.
+\end{itemize}
+
+% -------------------------------------------------------------------------------------------------
+% 6. DISTRIBUIÇÃO DE TAREFAS
+% -------------------------------------------------------------------------------------------------
+\chapter{Distribuição de Tarefas}
+\label{cap:distribuicao}
+
+Como o enunciado pede, segue a divisão de responsabilidades entre os integrantes ao longo do desenvolvimento.
+
+\section*{Lucas Toterol Rodrigues}
+\begin{itemize}
+    \item Módulo de fila encadeada (\texttt{fila\_func/}), com todas as operações (enqueue, dequeue, peek, contem, listar) e a liberação seletiva dos nodos.
+    \item Módulo de playlists (\texttt{playlist\_func/}), com criação e remoção de playlists, adição e remoção de músicas via \texttt{EntradaPlaylist} e a navegação sequencial.
+    \item Integração do avanço e retrocesso de músicas dentro das playlists no loop do player.
+\end{itemize}
+
+\section*{Caio Federico Esquivel Lovera Arze}
+\begin{itemize}
+    \item Módulo de pilha encadeada (\texttt{pilha\_func/}), com todas as operações (push, pop, peek, contem, listar) e a liberação seletiva dos nodos.
+    \item Módulo de áudio (\texttt{audio\_func/}), integrando a miniaudio e expondo a API de alto nível de reprodução, pausa, seek e detecção de fim de faixa.
+    \item Módulo de entrada não bloqueante (\texttt{input\_func/}), com suporte a Linux (\texttt{tcsetattr}/\texttt{select}) e Windows (\texttt{\_kbhit}/\texttt{\_getch}).
+\end{itemize}
+
+\section*{Trabalho Conjunto}
+\begin{itemize}
+    \item Biblioteca de músicas (\texttt{biblioteca\_func/}), com cadastro, remoção com verificação de uso, busca e listagem.
+    \item Loop de reprodução ao vivo (\texttt{player\_func/}), com a barra de status, o tratamento de teclas e a prioridade da próxima música.
+    \item Menus de texto (\texttt{menu\_func/}), juntando todas as estruturas numa interface de linha de comando coerente.
+    \item Arquivo central \texttt{tipos.h}, com as structs e typedefs compartilhados.
+    \item Makefile multiplataforma, incluindo a regra de cross-compilação para Windows.
+    \item Testes manuais com Valgrind e validação do sistema.
+    \item Elaboração deste relatório técnico.
+\end{itemize}
+
+% -------------------------------------------------------------------------------------------------
+% 7. CONSIDERAÇÕES FINAIS
+% -------------------------------------------------------------------------------------------------
+\chapter{Considerações Finais}
+\label{cap:conclusao}
+
+O estudo dirigido permitiu aplicar na prática as estruturas de dados dinâmicas (lista duplamente encadeada, pilha encadeada e fila encadeada) em um player de música plenamente funcional em C. A reprodução real de áudio, o teclado sem bloqueio e as playlists tornaram o projeto consideravelmente mais complexo que o anterior, o que exigiu mais cuidado com a memória e com o desenho da arquitetura.
+
+O conceito que mais pesou foi a separação entre proprietário e referenciador de nodos. Entender que só a biblioteca aloca e libera os \texttt{NodoMusica}, enquanto pilha, fila e playlists apenas apontam para eles, evitou erros difíceis de depurar, como ponteiro inválido e dupla liberação. Esse padrão de propriedade clara é básico no gerenciamento manual de memória em C.
+
+Quebrar a dependência circular com o callback e criar invólucros como a \texttt{EntradaPlaylist} para reutilizar estruturas em contextos diferentes foram aprendizados de design de software que vão além da simples codificação de uma estrutura de dados.
+
+Por fim, o projeto mostrou que escolher bem as estruturas e deixar claras as responsabilidades de cada módulo conta tanto quanto a correção do código. Fica como base para sistemas mais complexos, que dependem de um gerenciamento eficiente e seguro dos dados em memória.
+
+\postextual
+
+\bibliography{./referencias}
+
+\end{document}
